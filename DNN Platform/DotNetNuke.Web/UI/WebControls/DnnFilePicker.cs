@@ -528,7 +528,7 @@ namespace DotNetNuke.Web.UI.WebControls
 		private bool IsUserFolder(string folderPath)
 		{
             UserInfo user = User ?? UserController.Instance.GetCurrentUserInfo();
-            return (folderPath.ToLowerInvariant().StartsWith("users/") && folderPath.EndsWith(string.Format("/{0}/", user.UserID)));
+            return (folderPath.StartsWith("users/", StringComparison.InvariantCultureIgnoreCase) && folderPath.EndsWith(string.Format("/{0}/", user.UserID)));
 		}
 
 		private void LoadFiles()
@@ -820,7 +820,7 @@ namespace DotNetNuke.Web.UI.WebControls
 			{
 				var extension = Path.GetExtension(_txtFile.PostedFile.FileName).Replace(".", "");
 
-				if (!string.IsNullOrEmpty(FileFilter) && !FileFilter.ToLower().Contains(extension.ToLower()))
+				if (!string.IsNullOrEmpty(FileFilter) && !FileFilter.ToLowerInvariant().Contains(extension.ToLowerInvariant()))
 				{
 					// trying to upload a file not allowed for current filter
 					var localizedString = Localization.GetString("UploadError", LocalResourceFile);

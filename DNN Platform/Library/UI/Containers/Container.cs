@@ -260,10 +260,10 @@ namespace DotNetNuke.UI.Containers
 
             var showMessage = false;
             var adminMessage = Null.NullString;
-            if (viewRoles == PortalSettings.AdministratorRoleName.ToLowerInvariant()
-                            && (moduleEditRoles == PortalSettings.AdministratorRoleName.ToLowerInvariant() 
+            if (viewRoles.Equals(PortalSettings.AdministratorRoleName, StringComparison.InvariantCultureIgnoreCase)
+                            && (moduleEditRoles.Equals(PortalSettings.AdministratorRoleName, StringComparison.InvariantCultureIgnoreCase)
                                     || String.IsNullOrEmpty(moduleEditRoles))
-                            && pageEditRoles == PortalSettings.AdministratorRoleName.ToLowerInvariant())
+                            && pageEditRoles.Equals(PortalSettings.AdministratorRoleName, StringComparison.InvariantCultureIgnoreCase))
             {
                 adminMessage = Localization.GetString("ModuleVisibleAdministrator.Text");
                 showMessage = !ModuleConfiguration.HideAdminBorder && !Globals.IsAdminControl();
@@ -418,11 +418,11 @@ namespace DotNetNuke.UI.Containers
             {
                 if (ContentPane.Attributes["class"] != null)
                 {
-                    ContentPane.Attributes["class"] = ContentPane.Attributes["class"] + " DNNAlign" + ModuleConfiguration.Alignment.ToLower();
+                    ContentPane.Attributes["class"] = ContentPane.Attributes["class"] + " DNNAlign" + ModuleConfiguration.Alignment.ToLowerInvariant();
                 }
                 else
                 {
-                    ContentPane.Attributes["class"] = "DNNAlign" + ModuleConfiguration.Alignment.ToLower();
+                    ContentPane.Attributes["class"] = "DNNAlign" + ModuleConfiguration.Alignment.ToLowerInvariant();
                 }
             }
         }

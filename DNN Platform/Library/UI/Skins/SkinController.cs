@@ -161,33 +161,33 @@ namespace DotNetNuke.UI.Skins
             if (folderPath.IndexOf(Globals.HostMapPath, StringComparison.InvariantCultureIgnoreCase) != -1)
             {
                 skinType = "G";
-                skinFolder = folderPath.ToLower().Replace(Globals.HostMapPath.ToLower(), "").Replace("\\", "/");
+                skinFolder = folderPath.ToLowerInvariant().Replace(Globals.HostMapPath.ToLowerInvariant(), "").Replace("\\", "/");
             }
             else if (folderPath.IndexOf(PortalSettings.Current.HomeSystemDirectoryMapPath, StringComparison.InvariantCultureIgnoreCase) != -1)
             {
                 skinType = "S";
-                skinFolder = folderPath.ToLower().Replace(portalHomeDirMapPath.ToLower(), "").Replace("\\", "/");
+                skinFolder = folderPath.ToLowerInvariant().Replace(portalHomeDirMapPath.ToLowerInvariant(), "").Replace("\\", "/");
             }
             else //to be compliant with all versions
             {
                 skinType = "L";
-                skinFolder = folderPath.ToLower().Replace(portalHomeDirMapPath.ToLower(), "").Replace("\\", "/");
+                skinFolder = folderPath.ToLowerInvariant().Replace(portalHomeDirMapPath.ToLowerInvariant(), "").Replace("\\", "/");
             }
             var portalSettings = PortalController.Instance.GetCurrentPortalSettings();
 
             string skin = "[" + skinType.ToLowerInvariant() + "]" + skinFolder.ToLowerInvariant();
             if (skinFolder.ToLowerInvariant().Contains("skins"))
             {
-                if (Host.DefaultAdminSkin.ToLowerInvariant().StartsWith(skin) || Host.DefaultPortalSkin.ToLowerInvariant().StartsWith(skin) ||
-                    portalSettings.DefaultAdminSkin.ToLowerInvariant().StartsWith(skin) || portalSettings.DefaultPortalSkin.ToLowerInvariant().StartsWith(skin))
+                if (Host.DefaultAdminSkin.StartsWith(skin, StringComparison.InvariantCultureIgnoreCase) || Host.DefaultPortalSkin.StartsWith(skin, StringComparison.InvariantCultureIgnoreCase) ||
+                    portalSettings.DefaultAdminSkin.StartsWith(skin, StringComparison.InvariantCultureIgnoreCase) || portalSettings.DefaultPortalSkin.StartsWith(skin, StringComparison.InvariantCultureIgnoreCase))
                 {
                     canDelete = false;
                 }
             }
             else
             {
-                if (Host.DefaultAdminContainer.ToLowerInvariant().StartsWith(skin) || Host.DefaultPortalContainer.ToLowerInvariant().StartsWith(skin) ||
-                    portalSettings.DefaultAdminContainer.ToLowerInvariant().StartsWith(skin) || portalSettings.DefaultPortalContainer.ToLowerInvariant().StartsWith(skin))
+                if (Host.DefaultAdminContainer.StartsWith(skin, StringComparison.InvariantCultureIgnoreCase) || Host.DefaultPortalContainer.StartsWith(skin, StringComparison.InvariantCultureIgnoreCase) ||
+                    portalSettings.DefaultAdminContainer.StartsWith(skin, StringComparison.InvariantCultureIgnoreCase) || portalSettings.DefaultPortalContainer.StartsWith(skin, StringComparison.InvariantCultureIgnoreCase))
                 {
                     canDelete = false;
                 }
@@ -330,7 +330,7 @@ namespace DotNetNuke.UI.Skins
         /// <param name="skinFile">The File Name without extension</param>
         private static string FormatSkinName(string skinFolder, string skinFile)
         {
-            if (skinFolder.ToLower() == "_default")
+            if (skinFolder.Equals("_default", StringComparison.InvariantCultureIgnoreCase))
             {
                 // host folder
                 return skinFile;
@@ -338,7 +338,7 @@ namespace DotNetNuke.UI.Skins
             }
 			
 			//portal folder
-            switch (skinFile.ToLower())
+            switch (skinFile.ToLowerInvariant())
             {
                 case "skin":
                 case "container":
@@ -475,7 +475,7 @@ namespace DotNetNuke.UI.Skins
                     if(Host.AllowedExtensionWhitelist.IsAllowedExtension(strExtension, extraExtensions))
                     {
                         //process embedded zip files
-						if (objZipEntry.Name.ToLower() == RootSkin.ToLower() + ".zip")
+						if (objZipEntry.Name.Equals(RootSkin.ToLowerInvariant() + ".zip", StringComparison.InvariantCultureIgnoreCase))
                         {
                             using (var objMemoryStream = new MemoryStream())
                             {
@@ -489,7 +489,7 @@ namespace DotNetNuke.UI.Skins
                                 strMessage += UploadLegacySkin(rootPath, RootSkin, skinName, objMemoryStream);
                             }
                         }
-                        else if (objZipEntry.Name.ToLower() == RootContainer.ToLower() + ".zip")
+                        else if (objZipEntry.Name.Equals(RootContainer.ToLowerInvariant() + ".zip", StringComparison.InvariantCultureIgnoreCase))
                         {
                             using(var objMemoryStream = new MemoryStream())
                             {
@@ -541,7 +541,7 @@ namespace DotNetNuke.UI.Skins
                                 case ".html":
                                 case ".ascx":
                                 case ".css":
-                                    if (strFileName.ToLower().IndexOf(Globals.glbAboutPage.ToLower()) < 0)
+                                    if (strFileName.ToLowerInvariant().IndexOf(Globals.glbAboutPage.ToLowerInvariant()) < 0)
                                     {
                                         arrSkinFiles.Add(strFileName);
                                     }

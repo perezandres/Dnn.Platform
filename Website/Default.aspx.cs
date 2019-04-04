@@ -210,7 +210,7 @@ namespace DotNetNuke.Framework
                     var parameters = new List<string>(); //maximum number of elements
                     for (int intParam = 0; intParam <= Request.QueryString.Count - 1; intParam++)
                     {
-                        switch (Request.QueryString.Keys[intParam].ToLower())
+                        switch (Request.QueryString.Keys[intParam].ToLowerInvariant())
                         {
                             case "tabid":
                             case "tabname":
@@ -291,7 +291,7 @@ namespace DotNetNuke.Framework
                 if (slaveModule.DesktopModuleID != Null.NullInteger)
                 {
                     var control = ModuleControlFactory.CreateModuleControl(slaveModule) as IModuleControl;
-                    string extension = Path.GetExtension(slaveModule.ModuleControl.ControlSrc.ToLower());
+                    string extension = Path.GetExtension(slaveModule.ModuleControl.ControlSrc.ToLowerInvariant());
                     switch (extension)
                     {
                         case ".mvc":
@@ -446,6 +446,18 @@ namespace DotNetNuke.Framework
 				var customStylesheet = Path.Combine(PortalSettings.HomeDirectory, PortalSettings.ActiveTab.TabSettings["CustomStylesheet"].ToString());
 				ClientResourceManager.RegisterStyleSheet(this, customStylesheet);
 			}
+
+            // Cookie Consent
+            if (PortalSettings.ShowCookieConsent)
+            {
+                ClientAPI.RegisterClientVariable(this, "cc_morelink", PortalSettings.CookieMoreLink, true);
+                ClientAPI.RegisterClientVariable(this, "cc_message", Localization.GetString("cc_message", Localization.GlobalResourceFile), true);
+                ClientAPI.RegisterClientVariable(this, "cc_dismiss", Localization.GetString("cc_dismiss", Localization.GlobalResourceFile), true);
+                ClientAPI.RegisterClientVariable(this, "cc_link", Localization.GetString("cc_link", Localization.GlobalResourceFile), true);
+                ClientResourceManager.RegisterScript(Page, "~/Resources/Shared/Components/CookieConsent/cookieconsent.min.js", FileOrder.Js.DnnControls);
+                ClientResourceManager.RegisterStyleSheet(Page, "~/Resources/Shared/Components/CookieConsent/cookieconsent.min.css", FileOrder.Css.ResourceCss);
+                ClientResourceManager.RegisterScript(Page, "~/js/dnn.cookieconsent.js", FileOrder.Js.DefaultPriority);
+            }
         }
 
         /// -----------------------------------------------------------------------------
@@ -658,6 +670,11 @@ namespace DotNetNuke.Framework
                 {
                     var originalurl = Context.Items["UrlRewrite:OriginalUrl"].ToString();
                     CanonicalLinkUrl = originalurl.Replace(PortalSettings.PortalAlias.HTTPAlias, primaryHttpAlias);
+
+                    if (UrlUtils.IsSecureConnectionOrSslOffload(Request))
+                    {
+                        CanonicalLinkUrl = CanonicalLinkUrl.Replace("http://", "https://");
+                    }
                 }
             }
 
@@ -665,7 +682,7 @@ namespace DotNetNuke.Framework
             if (Request.IsAuthenticated && string.IsNullOrEmpty(Request.QueryString["runningDefault"]) == false)
             {
                 var userInfo = HttpContext.Current.Items["UserInfo"] as UserInfo;
-                var usernameLower = userInfo?.Username?.ToLower();
+                var usernameLower = userInfo?.Username?.ToLowerInvariant();
                 //only show message to default users
                 if ("admin".Equals(usernameLower) || "host".Equals(usernameLower))
                 {

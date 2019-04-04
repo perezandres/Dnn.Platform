@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>DotNetNuke.Website</RootNamespace>
     <AssemblyName>DotNetNuke.Website</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -805,6 +805,8 @@
     <Content Include="DesktopModules\Admin\UrlManagement\UrlProviderSettings.ascx" />
     <Content Include="Install\body_bg.jpg" />
     <Content Include="Install\Web.config" />
+    <Content Include="js\Debug\dnn.cookieconsent.js" />
+    <Content Include="js\dnn.cookieconsent.js" />
     <Content Include="Portals\_default\Skins\_default\WebControlSkin\Default\DropDownList.Default.css" />
     <Content Include="Portals\_default\Skins\_default\WebControlSkin\Default\GridView.Default.css" />
     <Content Include="Resources\Shared\components\DatePicker\moment.min.js" />
@@ -3287,6 +3289,12 @@
     <Content Include="Providers\DataProviders\SqlDataProvider\09.01.01.SqlDataProvider" />
     <Content Include="Providers\DataProviders\SqlDataProvider\09.02.00.SqlDataProvider" />
     <Content Include="Providers\DataProviders\SqlDataProvider\09.02.01.SqlDataProvider" />
+    <Content Include="Providers\DataProviders\SqlDataProvider\09.02.02.SqlDataProvider" />
+    <Content Include="Providers\DataProviders\SqlDataProvider\09.03.00.SqlDataProvider" />
+    <Content Include="Providers\DataProviders\SqlDataProvider\09.03.00.01.SqlDataProvider" />
+    <Content Include="Providers\DataProviders\SqlDataProvider\09.03.00.02.SqlDataProvider" />
+    <Content Include="Providers\DataProviders\SqlDataProvider\09.03.01.SqlDataProvider" />
+    <Content Include="Providers\DataProviders\SqlDataProvider\09.04.00.SqlDataProvider" />
     <None Include="Providers\DataProviders\SqlDataProvider\DotNetNuke.Data.SqlDataProvider" />
     <None Include="Providers\DataProviders\SqlDataProvider\DotNetNuke.Schema.SqlDataProvider" />
     <None Include="Providers\DataProviders\SqlDataProvider\UnInstall.SqlDataProvider" />
@@ -3318,10 +3326,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DNN Platform\Components\ClientDependency\Source\ClientDependency.Core.csproj">
-      <Project>{3b64e72e-63cc-4a90-adff-4b919ef17239}</Project>
-      <Name>ClientDependency.Core</Name>
-    </ProjectReference>
     <ProjectReference Include="..\DNN Platform\DotNetNuke.Instrumentation\DotNetNuke.Instrumentation.csproj">
       <Project>{3cd5f6b8-8360-4862-80b6-f402892db7dd}</Project>
       <Name>DotNetNuke.Instrumentation</Name>

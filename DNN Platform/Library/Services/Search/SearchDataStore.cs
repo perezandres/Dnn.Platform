@@ -53,7 +53,7 @@ namespace DotNetNuke.Services.Search
     /// <remarks>
     /// </remarks>
     /// -----------------------------------------------------------------------------
-    [Obsolete("Deprecated in DNN 7.1.  No longer used in the Search infrastructure.")]
+    [Obsolete("Deprecated in DNN 7.1.  No longer used in the Search infrastructure.. Scheduled removal in v11.0.0.")]
     public class SearchDataStore : SearchDataStoreProvider
     {
 		#region Private Methods
@@ -134,7 +134,7 @@ namespace DotNetNuke.Services.Search
             Hashtable commonWords = GetCommonWords(portalSettings.DefaultLanguage);
 
             //clean criteria
-            criteria = criteria.ToLower();
+            criteria = criteria.ToLowerInvariant();
 
             //split search criteria into words
             var searchWords = new SearchCriteriaCollection(criteria);

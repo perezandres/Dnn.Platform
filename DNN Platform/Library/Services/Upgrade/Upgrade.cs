@@ -1860,7 +1860,7 @@ namespace DotNetNuke.Services.Upgrade
                     {
                         foreach (PermissionInfo permission in PermissionController.GetPermissionsByFolder())
                         {
-                            if (permission.PermissionKey.ToUpper() == "READ")
+                            if (permission.PermissionKey.Equals("READ", StringComparison.InvariantCultureIgnoreCase))
                             {
                                 //Add All Users Read Access to the folder
                                 int roleId = Int32.Parse(Globals.glbRoleAllUsers);
@@ -3207,6 +3207,8 @@ namespace DotNetNuke.Services.Upgrade
 
         private static void UninstallPackage(string packageName, string packageType, bool deleteFiles = true, string version = "")
         {
+	    DnnInstallLogger.InstallLogInfo(string.Concat(Localization.Localization.GetString("LogStart", Localization.Localization.GlobalResourceFile), "Uninstallation of Package:", packageName, " Type:", packageType, " Version:", version));
+	    
             var searchInput = PackageController.Instance.GetExtensionPackage(Null.NullInteger, p => 
                 p.Name.Equals(packageName, StringComparison.OrdinalIgnoreCase) 
                 && p.PackageType.Equals(packageType, StringComparison.OrdinalIgnoreCase)
@@ -3790,6 +3792,7 @@ namespace DotNetNuke.Services.Upgrade
                 }
             }
         }
+        
         /// -----------------------------------------------------------------------------
         /// <summary>
         ///   AddPortal manages the Installation of a new DotNetNuke Portal
@@ -3797,7 +3800,7 @@ namespace DotNetNuke.Services.Upgrade
         /// <remarks>
         /// </remarks>
         /// -----------------------------------------------------------------------------
-        public static int AddPortal(XmlNode node, bool status, int indent)
+        public static int AddPortal(XmlNode node, bool status, int indent, UserInfo superUser = null)
         {
 
             int portalId = -1;
@@ -3867,7 +3870,8 @@ namespace DotNetNuke.Services.Upgrade
                     }
 
                     var template = FindBestTemplate(templateFileName);
-                    var userInfo = CreateUserInfo(firstName, lastName, username, password, email);
+                    var userInfo = superUser ?? CreateUserInfo(firstName, lastName, username, password, email);
+
 
                     //Create Portal
                     portalId = PortalController.Instance.CreatePortal(portalName,
@@ -3928,6 +3932,19 @@ namespace DotNetNuke.Services.Upgrade
             return portalId;
         }
 
+        /// -----------------------------------------------------------------------------
+        /// <summary>
+        ///   Obsolete, AddPortal manages the Installation of a new DotNetNuke Portal
+        /// </summary>
+        /// <remarks>
+        /// </remarks>
+        /// -----------------------------------------------------------------------------
+        [Obsolete("Deprecated in DNN 9.3.0, will be removed in 11.0.0. Use the overloaded method with the 'superUser' parameter instead.")]
+        public static int AddPortal(XmlNode node, bool status, int indent)
+        {
+            return AddPortal(node, status, indent, null);
+        }
+
         internal static UserInfo CreateUserInfo(string firstName, string lastName, string userName, string password, string email)
         {
             DnnInstallLogger.InstallLogInfo(Localization.Localization.GetString("LogStart", Localization.Localization.GlobalResourceFile) + "CreateUserInfo:" + userName);
@@ -3958,10 +3975,10 @@ namespace DotNetNuke.Services.Upgrade
             var defaultTemplates =
                 templates.Where(x => Path.GetFileName(x.TemplateFilePath) == templateFileName).ToList();
 
-            var match = defaultTemplates.FirstOrDefault(x => x.CultureCode.ToLower() == currentCulture);
+            var match = defaultTemplates.FirstOrDefault(x => x.CultureCode.ToLowerInvariant() == currentCulture);
             if (match == null)
             {
-                match = defaultTemplates.FirstOrDefault(x => x.CultureCode.ToLower().StartsWith(currentCulture.Substring(0, 2)));
+                match = defaultTemplates.FirstOrDefault(x => x.CultureCode.ToLowerInvariant().StartsWith(currentCulture.Substring(0, 2)));
             }
             if (match == null)
             {
@@ -3993,7 +4010,7 @@ namespace DotNetNuke.Services.Upgrade
             {
                 currentCulture = Localization.Localization.SystemLocale;
             }
-            currentCulture = currentCulture.ToLower();
+            currentCulture = currentCulture.ToLowerInvariant();
 
             return FindBestTemplate(templateFileName, currentCulture);
         }
@@ -4580,7 +4597,7 @@ namespace DotNetNuke.Services.Upgrade
                         bool settingIsSecure = false;
                         if ((secureAttrib != null))
                         {
-                            if (secureAttrib.Value.ToLower() == "true")
+                            if (secureAttrib.Value.ToLowerInvariant() == "true")
                             {
                                 settingIsSecure = true;
                             }
@@ -4700,6 +4717,7 @@ namespace DotNetNuke.Services.Upgrade
                     // parse SuperUser if Available
                     UserInfo superUser = GetSuperUser(xmlDoc, true);
                     UserController.CreateUser(ref superUser);
+                    superUsers.Add(superUser);
                 }
 
                 // parse File List if available
@@ -4753,7 +4771,8 @@ namespace DotNetNuke.Services.Upgrade
                                 HttpContext.Current.Items.Add("InstallFromWizard", true);
                             }
 
-                            int portalId = AddPortal(node, true, 2);
+                            var portalHost = superUsers[0] as UserInfo;
+                            int portalId = AddPortal(node, true, 2, portalHost);
                             if (portalId > -1)
                             {
                                 HtmlUtils.WriteFeedback(HttpContext.Current.Response, 2, "<font color='green'>Successfully Installed Site " + portalId + ":</font><br>");
@@ -4953,8 +4972,9 @@ namespace DotNetNuke.Services.Upgrade
 
                 var files = Directory.GetFiles(installPackagePath);
                 if (files.Length <= 0){ continue;}
+                Array.Sort(files); // The order of the returned file names is not guaranteed on certain NAS systems; use the Sort method if a specific sort order is required.
 
-	            var optionalPackages = new List<string>();
+                var optionalPackages = new List<string>();
                 foreach (var file in files)
                 {
 	                var extension = Path.GetExtension(file.ToLowerInvariant());
@@ -5033,7 +5053,7 @@ namespace DotNetNuke.Services.Upgrade
                 foreach (string file in Directory.GetFiles(installPackagePath))
                 {
 
-                    if (Path.GetExtension(file.ToLower()) == ".zip" /*|| installLanguage */)
+                    if (Path.GetExtension(file.ToLowerInvariant()) == ".zip" /*|| installLanguage */)
                     {
 
                         InstallPackage(file, packageType, writeFeedback);
@@ -5361,6 +5381,9 @@ namespace DotNetNuke.Services.Upgrade
                         case "9.2.1":
                             UpgradeToVersion921();
                             break;
+                        case "9.3.0":
+                            UpgradeToVersion930();
+                            break;
                     }
                 }
                 else
@@ -5600,6 +5623,28 @@ namespace DotNetNuke.Services.Upgrade
             UninstallPackage("jQuery-Migrate", "Javascript_Library", true, "1.2.1");
         }
 
+        private static void UpgradeToVersion930()
+        {
+            var applicationName = System.Web.Security.Membership.ApplicationName;
+            if (string.IsNullOrWhiteSpace(applicationName))
+            {
+                Logger.Warn("Unable to run orphaned user check. Application name is missing or not defined.");
+                return;
+            }
+            using (var reader = DataProvider.Instance().ExecuteReader("DeleteOrphanedAspNetUsers", applicationName))
+            {
+                while (reader.Read())
+                {
+                    var errorMsg = reader["ErrorMessage"];
+                    if (errorMsg != null)
+                    {
+                        Logger.Error("Failed to remove orphaned aspnet users. Error: " +
+                            errorMsg.ToString());
+                    }
+                }
+            }
+        }
+
         public static string UpdateConfig(string providerPath, Version version, bool writeFeedback)
         {
             var stringVersion = GetStringVersionWithRevision(version);
@@ -5799,7 +5844,7 @@ namespace DotNetNuke.Services.Upgrade
                     }
                 }
                 url += "&id=" + Host.GUID;
-                if (packageType.ToUpper() == DotNetNukeContext.Current.Application.Type.ToUpper())
+                if (packageType.Equals(DotNetNukeContext.Current.Application.Type, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!String.IsNullOrEmpty(HostController.Instance.GetString("NewsletterSubscribeEmail")))
                     {

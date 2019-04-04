@@ -80,7 +80,7 @@ namespace DotNetNuke.UI.Utilities
         /// <param name="strJSFunction">Javascript function name to execute</param>
         /// <remarks>
         /// </remarks>
-        [Obsolete("This method has been deprecated and its code replaced in the 7.1.0 release")]
+        [Obsolete("This method has been deprecated and its code replaced in the 7.1.0 release. Scheduled removal in v11.0.0.")]
         public static void AddBodyOnloadEventHandler(Page objPage, string strJSFunction)
         {
             //legacy implementation replaced
@@ -423,7 +423,7 @@ namespace DotNetNuke.UI.Utilities
                         ClientAPI.RegisterClientVariable(objButton.Page, objButton.ClientID + ":exp", Convert.ToInt32(value).ToString(), true);
                         break;
                     case MinMaxPersistanceType.Cookie:
-                        var objModuleVisible = new HttpCookie("_Module" + intModuleId + "_Visible", value.ToString().ToLower())
+                        var objModuleVisible = new HttpCookie("_Module" + intModuleId + "_Visible", value.ToString().ToLowerInvariant())
                         {
                             Expires = DateTime.MaxValue,
                             Path = (!string.IsNullOrEmpty(Common.Globals.ApplicationPath) ? Common.Globals.ApplicationPath : "/")

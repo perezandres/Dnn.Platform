@@ -154,7 +154,7 @@ namespace DotNetNuke.Services.Installer.Writers
 
             //Write controlSrc
             string controlSrc = Util.ReadElement(controlNav, "src");
-            if (!(controlSrc.ToLower().StartsWith("desktopmodules") || !controlSrc.ToLower().EndsWith(".ascx")))
+            if (!(controlSrc.StartsWith("desktopmodules", StringComparison.InvariantCultureIgnoreCase) || !controlSrc.EndsWith(".ascx", StringComparison.InvariantCultureIgnoreCase)))
             {
 				//this code allows a developer to reference an ASCX file in a different folder than the module folder ( good for ASCX files shared between modules where you want only a single copy )
                 //or it allows the developer to use webcontrols rather than usercontrols
@@ -321,7 +321,7 @@ namespace DotNetNuke.Services.Installer.Writers
                 }
 				
 				//In Legacy Modules the assembly is always in "bin" - ignore the path element
-                if (fileName.ToLower().EndsWith(".dll"))
+                if (fileName.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase))
                 {
                     AddFile("bin/" + fileName, sourceFileName);
                 }

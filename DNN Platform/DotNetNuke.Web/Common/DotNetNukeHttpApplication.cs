@@ -1,6 +1,6 @@
 #region Copyright
 // 
-// DotNetNuke® - http://www.dotnetnuke.com
+// DotNetNukeÂ® - http://www.dotnetnuke.com
 // Copyright (c) 2002-2018
 // by DotNetNuke Corporation
 // 
@@ -84,6 +84,7 @@ namespace DotNetNuke.Web.Common.Internal
 
             ComponentFactory.Container = new SimpleContainer();
 
+            ComponentFactory.InstallComponents(new ProviderInstaller("databaseConnection", typeof(DatabaseConnectionProvider), typeof(SqlDatabaseConnectionProvider)));
             ComponentFactory.InstallComponents(new ProviderInstaller("data", typeof(DataProvider), typeof(SqlDataProvider)));
             ComponentFactory.InstallComponents(new ProviderInstaller("caching", typeof(CachingProvider), typeof(FBCachingProvider)));
             ComponentFactory.InstallComponents(new ProviderInstaller("logging", typeof(LoggingProvider), typeof(DBLoggingProvider)));
@@ -113,6 +114,9 @@ namespace DotNetNuke.Web.Common.Internal
 
             Logger.InfoFormat("Application Started ({0})", Globals.ElapsedSinceAppStart); // just to start the timer
             DotNetNukeShutdownOverload.InitializeFcnSettings();
+
+            // register the assembly-lookup to correct the breaking rename in DNN 9.2
+            DotNetNuke.Services.Zip.SharpZipLibRedirect.RegisterSharpZipLibRedirect();
             //DotNetNukeSecurity.Initialize();
         }
         
@@ -199,7 +203,7 @@ namespace DotNetNuke.Web.Common.Internal
                 }
             }
 
-            var requestUrl = app.Request.Url.LocalPath.ToLower();
+            var requestUrl = app.Request.Url.LocalPath.ToLowerInvariant();
             if (!requestUrl.EndsWith(".aspx") && !requestUrl.EndsWith("/") &&  Endings.Any(requestUrl.EndsWith))
             {
                 return;
@@ -230,7 +234,7 @@ namespace DotNetNuke.Web.Common.Internal
 
         private static bool IsInstallOrUpgradeRequest(HttpRequest request)
         {
-            var url = request.Url.LocalPath.ToLower();
+            var url = request.Url.LocalPath.ToLowerInvariant();
 
             return url.EndsWith("webresource.axd")
                    || url.EndsWith("scriptresource.axd")
@@ -239,5 +243,6 @@ namespace DotNetNuke.Web.Common.Internal
                    || url.Contains("installwizard.aspx")
                    || url.EndsWith("install.aspx");
         }
+
     }
 }

@@ -246,7 +246,7 @@ namespace DotNetNuke.Services.Installer.Installers
                 case "html":
                 case "ascx":
                 case "css":
-                    if (file.Path.ToLower().IndexOf(Globals.glbAboutPage.ToLower()) < 0)
+                    if (file.Path.IndexOf(Globals.glbAboutPage, StringComparison.InvariantCultureIgnoreCase) < 0)
                     {
                         SkinFiles.Add(PhysicalBasePath + file.FullName);
                     }

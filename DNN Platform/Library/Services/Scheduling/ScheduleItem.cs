@@ -146,17 +146,17 @@ namespace DotNetNuke.Services.Scheduling
             if (strObjectDependencies.IndexOf(",") > -1)
             {
                 string[] a;
-                a = strObjectDependencies.ToLower().Split(',');
+                a = strObjectDependencies.ToLowerInvariant().Split(',');
                 int i;
                 for (i = 0; i <= a.Length - 1; i++)
                 {
-                    if (ObjectDependencies.ToLower().IndexOf(a[i].Trim()) > -1)
+                    if (ObjectDependencies.IndexOf(a[i].Trim(), StringComparison.InvariantCultureIgnoreCase) > -1)
                     {
                         return true;
                     }
                 }
             }
-            else if (ObjectDependencies.ToLower().IndexOf(strObjectDependencies.ToLower()) > -1)
+            else if (ObjectDependencies.IndexOf(strObjectDependencies, StringComparison.InvariantCultureIgnoreCase) > -1)
             {
                 return true;
             }

@@ -259,7 +259,7 @@ namespace DotNetNuke.Services.Installer.Installers
                 Files.Add(file);
 
                 //Add to the
-                Package.InstallerInfo.Files[file.FullName.ToLower()] = file;
+                Package.InstallerInfo.Files[file.FullName.ToLowerInvariant()] = file;
             }
         }
 
@@ -306,7 +306,7 @@ namespace DotNetNuke.Services.Installer.Installers
 			//Get the sourceFileName
 			string sourceFileName = Util.ReadElement(nav, "sourceFileName");
             var file = new InstallFile(fileName, sourceFileName, Package.InstallerInfo);
-            if ((!string.IsNullOrEmpty(BasePath)) && (BasePath.ToLowerInvariant().StartsWith("app_code") && file.Type == InstallFileType.Other))
+            if ((!string.IsNullOrEmpty(BasePath)) && (BasePath.StartsWith("app_code", StringComparison.InvariantCultureIgnoreCase) && file.Type == InstallFileType.Other))
             {
                 file.Type = InstallFileType.AppCode;
             }

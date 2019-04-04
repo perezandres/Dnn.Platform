@@ -501,7 +501,7 @@ namespace DotNetNuke.Services.Installer.Writers
                 {
                     filePath = "[app_code]" + filePath;
                 }
-                if (file.Extension.ToLowerInvariant() != ".dnn" && (file.Attributes & FileAttributes.Hidden) == 0)
+                if (!file.Extension.Equals(".dnn", StringComparison.InvariantCultureIgnoreCase) && (file.Attributes & FileAttributes.Hidden) == 0)
                 {
                     AddFile(Path.Combine(filePath, file.Name));
                 }
@@ -556,8 +556,8 @@ namespace DotNetNuke.Services.Installer.Writers
                     fileName = fileName.Substring(0, fileName.IndexOf(","));
                 }
                 if (
-                    !(fileName.ToLowerInvariant().StartsWith("system") || fileName.ToLowerInvariant().StartsWith("microsoft") || fileName.ToLowerInvariant() == "dotnetnuke" ||
-                      fileName.ToLowerInvariant() == "dotnetnuke.webutility" || fileName.ToLowerInvariant() == "dotnetnuke.webcontrols"))
+                    !(fileName.StartsWith("system", StringComparison.InvariantCultureIgnoreCase) || fileName.StartsWith("microsoft", StringComparison.InvariantCultureIgnoreCase) || fileName.Equals("dotnetnuke", StringComparison.InvariantCultureIgnoreCase) ||
+                      fileName.Equals("dotnetnuke.webutility", StringComparison.InvariantCultureIgnoreCase) || fileName.Equals("dotnetnuke.webcontrols", StringComparison.InvariantCultureIgnoreCase)))
                 {
                     AddFile(fileName + ".dll");
                 }
@@ -607,19 +607,19 @@ namespace DotNetNuke.Services.Installer.Writers
             switch (file.Type)
             {
                 case InstallFileType.AppCode:
-                    _AppCodeFiles[file.FullName.ToLower()] = file;
+                    _AppCodeFiles[file.FullName.ToLowerInvariant()] = file;
                     break;
                 case InstallFileType.Assembly:
-                    _Assemblies[file.FullName.ToLower()] = file;
+                    _Assemblies[file.FullName.ToLowerInvariant()] = file;
                     break;
                 case InstallFileType.CleanUp:
-                    _CleanUpFiles[file.FullName.ToLower()] = file;
+                    _CleanUpFiles[file.FullName.ToLowerInvariant()] = file;
                     break;
                 case InstallFileType.Script:
-                    _Scripts[file.FullName.ToLower()] = file;
+                    _Scripts[file.FullName.ToLowerInvariant()] = file;
                     break;
                 default:
-                    _Files[file.FullName.ToLower()] = file;
+                    _Files[file.FullName.ToLowerInvariant()] = file;
                     break;
             }
             if ((file.Type == InstallFileType.CleanUp || file.Type == InstallFileType.Script) && FileVersionMatchRegex.IsMatch(file.Name))
@@ -634,7 +634,7 @@ namespace DotNetNuke.Services.Installer.Writers
 
         public void AddResourceFile(InstallFile file)
         {
-            _Resources[file.FullName.ToLower()] = file;
+            _Resources[file.FullName.ToLowerInvariant()] = file;
         }
 
         public void CreatePackage(string archiveName, string manifestName, string manifest, bool createManifest)

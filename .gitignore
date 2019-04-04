@@ -20,6 +20,7 @@
 *.idea/
 
 # Build results
+[Tt]ools
 [Rr]elease
 *_i.c
 *_p.c
@@ -40,6 +41,7 @@
 .builds
 *.dotCover
 *.ldf
+Artifacts/
 
 # git merge artifacts
 *.orig
@@ -248,3 +250,4 @@ Website/Portals/_default/Install/Dnn.CKEditorDefaultSettings.xml
 Website/Portals/_default/Install/Dnn.CKToolbarButtons.xml
 Website/Portals/_default/Install/Dnn.CKToolbarSets.xml
 Website/DesktopModules/Admin/SiteExportImport/App_LocalResources/ExportImport.resx
+/TestResult.xml

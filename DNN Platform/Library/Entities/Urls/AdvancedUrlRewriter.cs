@@ -57,6 +57,7 @@ namespace DotNetNuke.Entities.Urls
         private static readonly Regex AumDebugRegex = new Regex(@"(&|\?)_aumdebug=[A-Z]+(?:&|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex RewritePathRx = new Regex("(?:&(?<parm>.[^&]+)=$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
         private static readonly Regex UrlSlashesRegex = new Regex("[\\\\/]\\.\\.[\\\\/]", RegexOptions.Compiled);
+        private static readonly Regex AliasUrlRegex = new Regex(@"(?:^(?<http>http[s]{0,1}://){0,1})(?:(?<alias>_ALIAS_)(?<path>$|\?[\w]*|/[\w]*))", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
         #region Private Members
 
@@ -152,31 +153,53 @@ namespace DotNetNuke.Entities.Urls
 
         private PortalAliasInfo GetPortalAlias(FriendlyUrlSettings settings, string requestUrl, out bool redirectAlias, out bool isPrimaryAlias, out string wrongAlias)
         {
-            PortalAliasInfo alias = null;
+            PortalAliasInfo aliasInfo = null;
             redirectAlias = false;
             wrongAlias = null;
             isPrimaryAlias = false;
-            OrderedDictionary portalRegexes = TabIndexController.GetPortalAliasRegexes(settings);
-            foreach (string regexPattern in portalRegexes.Keys)
+            OrderedDictionary portalAliases = TabIndexController.GetPortalAliases(settings);
+            foreach (string alias in portalAliases.Keys)
             {
-                //split out the portal alias from the regex pattern representing that alias
-                var regex = RegexUtils.GetCachedRegex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-                var aliasMatch = regex.Match(requestUrl);
+                var urlToMatch = requestUrl;
+                // in fact, requested url should contain alias
+                // for better performance, need to check whether we want to proceed with a whole url matching or not
+                // if alias is not a part of url -> let's proceed to the next iteration
+                var aliasIndex = urlToMatch.IndexOf(alias, StringComparison.InvariantCultureIgnoreCase);
+                if (aliasIndex < 0)
+                {
+                    continue;
+                }
+                else
+                {
+                    // we do not accept URL if the first occurence of alias is presented somewhere in the query string
+                    var queryIndex = urlToMatch.IndexOf("?", StringComparison.InvariantCultureIgnoreCase);
+                    if (queryIndex >= 0 && queryIndex < aliasIndex)
+                    {
+                        // alias is in the query string, go to the next alias
+                        continue;
+                    }
+                    // we are fine here, lets prepare URL to be validated in regex
+                    urlToMatch = urlToMatch.ReplaceIgnoreCase(alias, "_ALIAS_");
+                }
+                // check whether requested URL has the right URL format containing existing alias
+                // i.e. url is http://dnndev.me/site1/query?string=test, alias is dnndev.me/site1
+                // in the below expression we will validate following value http://_ALIAS_/query?string=test
+                var aliasMatch = AliasUrlRegex.Match(urlToMatch);
                 if (aliasMatch.Success)
                 {
                     //check for mobile browser and matching
-                    var aliasEx = (PortalAliasInfo)portalRegexes[regexPattern];
+                    var aliasEx = (PortalAliasInfo)portalAliases[alias];
                     redirectAlias = aliasEx.Redirect;
                     if (redirectAlias)
                     {
-                        wrongAlias = aliasMatch.Groups["alias"].Value;
+                        wrongAlias = alias;
                     }
                     isPrimaryAlias = aliasEx.IsPrimary;
-                    alias = aliasEx;
+                    aliasInfo = aliasEx;
                     break;
                 }
             }
-            return alias;
+            return aliasInfo;
         }
 
         private void ProcessRequest(HttpContext context,
@@ -316,7 +339,7 @@ namespace DotNetNuke.Entities.Urls
 
                         //Check if we have a standard url
                         var uri = new Uri(fullUrl);
-                        if (uri.PathAndQuery.ToLowerInvariant().StartsWith("/" + Globals.glbDefaultPage.ToLowerInvariant()))
+                        if (uri.PathAndQuery.StartsWith("/" + Globals.glbDefaultPage, StringComparison.InvariantCultureIgnoreCase))
                         {
                             result.DoRewrite = true;
                             result.Action = ActionType.CheckFor301;
@@ -1312,7 +1335,7 @@ namespace DotNetNuke.Entities.Urls
                 }
             }
 
-            switch (debugValue.ToLower())
+            switch (debugValue.ToLowerInvariant())
             {
                 case "true":
                     retVal = true;
@@ -1342,7 +1365,7 @@ namespace DotNetNuke.Entities.Urls
                 (settings.ForwardExternalUrlsType != DNNPageForwardType.NoForward ||
                  result.Reason == RedirectReason.Tab_Permanent_Redirect))
             {
-                bool allowRedirect = !(result.RewritePath != null && result.RewritePath.ToLower().Contains("&ctl=tab"));
+                bool allowRedirect = !(result.RewritePath != null && result.RewritePath.ToLowerInvariant().Contains("&ctl=tab"));
                 //594 : do not redirect settings pages for external urls
                 if (allowRedirect)
                 {
@@ -1554,8 +1577,11 @@ namespace DotNetNuke.Entities.Urls
                     //check ssl enforced
                     if (portalSettings.SSLEnforced)
                     {
-                        //check page is not secure, connection is secure
-                        if (!portalSettings.ActiveTab.IsSecure && result.IsSecureConnection)
+                        // Prevent browser's mixed-content error in case we open a secure PopUp or a secure iframe 
+                        // from an unsecure page
+                        if (!portalSettings.ActiveTab.IsSecure && 
+                            result.IsSecureConnection &&
+                            !UrlUtils.IsPopUp(url))
                         {
                             //has connection already been forced to secure?
                             if (queryStringCol["ssl"] == null)
@@ -1701,7 +1727,7 @@ namespace DotNetNuke.Entities.Urls
                                 if (!triedWWW)
                                 {
                                     triedWWW = true; //now tried adding/removing www
-                                    if (checkAlias.ToLower().StartsWith("www."))
+                                    if (checkAlias.StartsWith("www.", StringComparison.InvariantCultureIgnoreCase))
                                     {
                                         checkAlias = checkAlias.Substring(4);
                                     }
@@ -1815,7 +1841,7 @@ namespace DotNetNuke.Entities.Urls
                         customAliasesForTabs.Remove(cpa.HTTPAlias);
                     }
                 }
-                isACustomTabAlias = customAliasesForTabs.Contains(httpAlias.ToLower());
+                isACustomTabAlias = customAliasesForTabs.Contains(httpAlias.ToLowerInvariant());
             }
             return isACustomTabAlias;
         }
@@ -2087,7 +2113,7 @@ namespace DotNetNuke.Entities.Urls
 
             if (result.PortalId == -1)
             {
-                if (!requestUri.LocalPath.ToLower().EndsWith(Globals.glbDefaultPage.ToLower()))
+                if (!requestUri.LocalPath.EndsWith(Globals.glbDefaultPage, StringComparison.InvariantCultureIgnoreCase))
                 {
                     // allows requests for aspx pages in custom folder locations to be processed 
                     return;
@@ -2253,9 +2279,9 @@ namespace DotNetNuke.Entities.Urls
             if (result.PortalAlias != null && result.PortalAlias.HTTPAlias != null)
             {
                 string defaultPageUrl = result.Scheme + result.PortalAlias.HTTPAlias + "/" +
-                                        Globals.glbDefaultPage.ToLower(); //child alias Url with /default.aspx
+                                        Globals.glbDefaultPage.ToLowerInvariant(); //child alias Url with /default.aspx
                 //660 : look for a querystring on the site root for a child portal, and handle it if so
-                if (String.CompareOrdinal(requestUrl.ToLower(), defaultPageUrl) == 0)
+                if (String.CompareOrdinal(requestUrl.ToLowerInvariant(), defaultPageUrl) == 0)
                 {
                     //exact match : that's the alias root
                     isChildPortalRootUrl = true;
@@ -2275,7 +2301,7 @@ namespace DotNetNuke.Entities.Urls
                             isChildPortalRootUrl = true;
                             aliasQueryString = "?" + queryString;
                             //674: check for 301 if this value is a tabid/xx - otherwise the url will just evaluate as is
-                            if (queryString.ToLower().StartsWith("tabid="))
+                            if (queryString.ToLowerInvariant().StartsWith("tabid="))
                             {
                                 result.Action = ActionType.CheckFor301;
                             }
@@ -2288,7 +2314,7 @@ namespace DotNetNuke.Entities.Urls
 
         private static string MakeUrlWithAlias(Uri requestUri, string httpAlias)
         {
-            return requestUri.AbsoluteUri.ToLower().StartsWith("https://")
+            return requestUri.AbsoluteUri.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)
                              ? "https://" + httpAlias.Replace("*.", "") + "/"
                              : "http://" + httpAlias.Replace("*.", "") + "/";
         }
@@ -2338,8 +2364,9 @@ namespace DotNetNuke.Entities.Urls
 
         private static bool IgnoreRequestForWebServer(string requestedPath)
         {
-            if (requestedPath.ToLowerInvariant().IndexOf("synchronizecache.aspx", StringComparison.Ordinal) > 1
-                || requestedPath.EndsWith("keepalive.aspx", true, CultureInfo.InvariantCulture))
+            //Should standardize comparison methods
+            if (requestedPath.IndexOf("synchronizecache.aspx", StringComparison.OrdinalIgnoreCase) > 1
+                || requestedPath.EndsWith("keepalive.aspx", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
@@ -2404,7 +2431,7 @@ namespace DotNetNuke.Entities.Urls
                 //ignore all install requests
                 retVal = true;
             }
-            else if (request != null && request.Path.ToLower().EndsWith("ImageChallenge.captcha.aspx".ToLower()))
+            else if (request != null && request.Path.EndsWith("imagechallenge.captcha.aspx", StringComparison.InvariantCultureIgnoreCase))
             {
                 retVal = true;
             }
@@ -2661,7 +2688,7 @@ namespace DotNetNuke.Entities.Urls
                             if (requestedUrlAliasEnd > Null.NullInteger)
                             {
                                 //818 : when a site root is used for a custom page Url, then check for max length within bounds
-                                if ((requestedUrl.Length - requestedUrlAliasEnd) >= 12 && requestedUrl.Substring(requestedUrlAliasEnd).ToLower() == "default.aspx")
+                                if ((requestedUrl.Length - requestedUrlAliasEnd) >= 12 && requestedUrl.Substring(requestedUrlAliasEnd).Equals("default.aspx", StringComparison.InvariantCultureIgnoreCase))
                                 {
                                     requestedUrl = requestedUrl.Substring(0, requestedUrl.Length - 12);
                                     //12 = default.aspx length
@@ -2714,12 +2741,12 @@ namespace DotNetNuke.Entities.Urls
                             var urlDecode = HttpUtility.UrlDecode(requestedUrl);
                             if (urlDecode != null)
                             {
-                                string rawUrlWithHost = StripDebugParameter(urlDecode.ToLower());
-                                //string rawUrlWithHost = StripDebugParameter(System.Web.HttpUtility.UrlDecode(scheme + requestUri.Host + requestUri.PathAndQuery).ToLower());
+                                string rawUrlWithHost = StripDebugParameter(urlDecode.ToLowerInvariant());
+                                //string rawUrlWithHost = StripDebugParameter(System.Web.HttpUtility.UrlDecode(scheme + requestUri.Host + requestUri.PathAndQuery).ToLowerInvariant());
                                 string rawUrlWithHostNoScheme = StripDebugParameter(rawUrlWithHost.Replace(scheme, ""));
-                                string bestFriendlyNoScheme = StripDebugParameter(bestFriendlyUrl.ToLower().Replace(scheme, ""));
-                                string requestedPathNoScheme = StripDebugParameter(requestUri.AbsoluteUri.Replace(scheme, "").ToLower());
-                                string rawUrlLowerCase = StripDebugParameter(requestUri.AbsoluteUri.ToLower());
+                                string bestFriendlyNoScheme = StripDebugParameter(bestFriendlyUrl.ToLowerInvariant().Replace(scheme, ""));
+                                string requestedPathNoScheme = StripDebugParameter(requestUri.AbsoluteUri.Replace(scheme, "").ToLowerInvariant());
+                                string rawUrlLowerCase = StripDebugParameter(requestUri.AbsoluteUri.ToLowerInvariant());
 
                                 //check to see if just an alias redirect of an internal alias
                                 var primaryAliases = PortalAliasController.Instance.GetPortalAliasesByPortalId(result.PortalId).ToList();
@@ -2729,10 +2756,10 @@ namespace DotNetNuke.Entities.Urls
                                     var cpa = primaryAliases.GetAliasByPortalIdAndSettings(result);
                                     if (cpa != null)
                                     {
-                                        string chosenAlias = cpa.HTTPAlias.ToLower();
+                                        string chosenAlias = cpa.HTTPAlias.ToLowerInvariant();
                                         foreach (InternalAlias ia in settings.InternalAliasList)
                                         {
-                                            string internalAlias = ia.HttpAlias.ToLower();
+                                            string internalAlias = ia.HttpAlias.ToLowerInvariant();
                                             if (requestedPathNoScheme.Contains(internalAlias))
                                             {
                                                 //an internal alias has been used.
@@ -2797,7 +2824,7 @@ namespace DotNetNuke.Entities.Urls
                     string urlDecodedRedirectPath = HttpUtility.UrlDecode(redirectPathOnly);
 
                     //check for wrong case redirection
-                    if (urlDecodedRedirectPath != null && (settings.RedirectWrongCase && String.CompareOrdinal(urlDecodedRedirectPath, urlDecodedRedirectPath.ToLower()) != 0))
+                    if (urlDecodedRedirectPath != null && (settings.RedirectWrongCase && String.CompareOrdinal(urlDecodedRedirectPath, urlDecodedRedirectPath.ToLowerInvariant()) != 0))
                     {
                         TabInfo tab;
                         bool allowRedirect = CheckFor301RedirectExclusion(result.TabId, result.PortalId, true, out tab, settings);
@@ -2820,7 +2847,7 @@ namespace DotNetNuke.Entities.Urls
                             }
                             else
                             {
-                                redirectPath = redirectPath.Replace(redirectPathOnly, redirectPathOnly.ToLower());
+                                redirectPath = redirectPath.Replace(redirectPathOnly, redirectPathOnly.ToLowerInvariant());
                                 doRedirect = true;
                                 result.Reason = RedirectReason.Not_Lower_Case;
                             }
